@@ -45,7 +45,6 @@ class _MyHomePageState extends State<MyHomePage> {
     //TODO: mybe check if already connected but again not
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) {
-          device.connect();
           return DeviceScreen(device: device);
        }));
   }
@@ -90,7 +89,12 @@ class _MyHomePageState extends State<MyHomePage> {
                               : Icon(Icons.link),
                             onPressed: (builder.data == BluetoothDeviceState.connected)
                               ? scanResult.device.disconnect
-                              : () => connectAndNavigate(context, scanResult.device)
+                              : ()   async {
+                              // TODO: make method for this
+                                    FlutterBlue.instance.stopScan();
+                                    await scanResult.device.connect();
+                                    connectAndNavigate(context, scanResult.device);
+                            }
                         )
                     )
                     )).toList(),
@@ -109,31 +113,37 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class DeviceScreen extends StatelessWidget {
+class DeviceScreen extends StatefulWidget {
   const DeviceScreen({Key? key, required this.device}) : super(key: key);
 
   final BluetoothDevice device;
 
-  // final BluetoothService wifiConfigService = device.services
-  //     .firstWhere((service) => service.uuid == SERVICE_UUID);
-  //
-  // final BluetoothCharacteristic availableNetworks = wifiConfigService.characteristics
-  //     .firstWhere((characterstics) => characterstics.uuid == AVAILABE_NETWORKS_CHARACTERISTIC_UUID);
-  //
-  // final BluetoothCharacteristic wifiConfig = wifiConfigService.characteristics
-  //     .firstWhere((characterstics) => characterstics.uuid == WIFI_SETUP_CHARACTERISTIC_UUID);
+  @override
+  State<DeviceScreen> createState() => _DeviceScreenState();
+}
+
+
+class _DeviceScreenState extends State<DeviceScreen> {
+
+  late Future<List<String>> _wifiNames;
+
+  @override
+  void initState() {
+    super.initState();
+    _wifiNames =  readWifiNames(widget.device);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(device.name),
+        title: Text(widget.device.name),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
             FutureBuilder<List<String>>(
-                future: readWifiNames(device),
+                future: _wifiNames,
                 initialData: [],
                 builder: (context, builder)  {
                     if (builder.hasData) {
@@ -147,11 +157,11 @@ class DeviceScreen extends StatelessWidget {
                                     icon: Icon(Icons.link),
                                     onPressed: () => showDialog(
                                         context: context,
-                                        builder: (builder) => _buildInputDialog(device, wifi, context),
+                                        builder: (builder) => _buildInputDialog(widget.device, wifi, context),
                                   )),
                                 onTap: () => showDialog(
                                   context: context,
-                                  builder: (builder) => _buildInputDialog(device, wifi, context),
+                                  builder: (builder) => _buildInputDialog(widget.device, wifi, context),
                           ),
                               )).toList()
                       );

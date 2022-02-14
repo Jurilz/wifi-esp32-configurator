@@ -6,6 +6,8 @@ final Guid SERVICE_UUID = new Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
 final Guid AVAILABE_NETWORKS_CHARACTERISTIC_UUID = new Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
 final Guid WIFI_SETUP_CHARACTERISTIC_UUID = new Guid('59a3861e-8d11-4f40-9597-912f562e4759');
 
+
+
 void main() {
   runApp(const MyApp());
 }
@@ -40,6 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void connectAndNavigate(BuildContext context, BluetoothDevice device) {
+    //TODO: mybe check if already connected but again not
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) {
           device.connect();
@@ -66,14 +69,18 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               StreamBuilder<List<ScanResult>>(
                 stream: FlutterBlue.instance.scanResults,
-                  initialData: [],
-                  builder: (context, builder) => Column(
+                initialData: [],
+                builder: (context, builder) => Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: builder.data!.map((scanResult) => ListTile(
                         // TODO: maybe add device id
                         title: Text(scanResult.device.name),
                         leading: Text(scanResult.rssi.toString()),
+                        onTap: () => Navigator.of(context)
+                            .push(MaterialPageRoute(builder: (context) {
+                          return DeviceScreen(device: scanResult.device);
+                        })),
                         trailing: StreamBuilder<BluetoothDeviceState>(
                           stream: scanResult.device.state,
                           initialData: BluetoothDeviceState.disconnected,
@@ -107,6 +114,15 @@ class DeviceScreen extends StatelessWidget {
 
   final BluetoothDevice device;
 
+  // final BluetoothService wifiConfigService = device.services
+  //     .firstWhere((service) => service.uuid == SERVICE_UUID);
+  //
+  // final BluetoothCharacteristic availableNetworks = wifiConfigService.characteristics
+  //     .firstWhere((characterstics) => characterstics.uuid == AVAILABE_NETWORKS_CHARACTERISTIC_UUID);
+  //
+  // final BluetoothCharacteristic wifiConfig = wifiConfigService.characteristics
+  //     .firstWhere((characterstics) => characterstics.uuid == WIFI_SETUP_CHARACTERISTIC_UUID);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,41 +132,105 @@ class DeviceScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
-            StreamBuilder<List<BluetoothService>>(
-                stream: device.services,
+            FutureBuilder<List<String>>(
+                future: readWifiNames(device),
                 initialData: [],
-                builder: (context, builder) => Column(
-                  children: _buildWifiScreen(builder.data!),
-                )
-            )
+                builder: (context, builder)  {
+                    if (builder.hasData) {
+                      return Column(
+                          children: builder.data!
+                              .map((wifi) =>
+                              ListTile(
+                                  title: Text(wifi),
+                                  leading: const Icon(Icons.wifi),
+                                  trailing: IconButton(
+                                    icon: Icon(Icons.link),
+                                    onPressed: () => showDialog(
+                                        context: context,
+                                        builder: (builder) => _buildInputDialog(device, wifi, context),
+                                  )),
+                                onTap: () => showDialog(
+                                  context: context,
+                                  builder: (builder) => _buildInputDialog(device, wifi, context),
+                          ),
+                              )).toList()
+                      );
+                    } else {
+                      return CircularProgressIndicator();
+                    }
+                  }
+              )
           ],
-        ),
-      ),
+        )
+      )
     );
   }
+  
+  Future<BluetoothCharacteristic> getAvailableNetworksCharacteristics(BluetoothDevice device) async {
+    final List<BluetoothService> services = await device.discoverServices();
+    final BluetoothService service = services.firstWhere((service) => service.uuid == SERVICE_UUID);
+    return service.characteristics
+        .firstWhere((characteristics) => characteristics.uuid == AVAILABE_NETWORKS_CHARACTERISTIC_UUID);
+  }
 
+  Future<BluetoothCharacteristic> getWifiConfigCharacteristics(BluetoothDevice device) async {
+    final List<BluetoothService> services = await device.discoverServices();
+    final BluetoothService service = services.firstWhere((service) => service.uuid == SERVICE_UUID);
+    return service.characteristics
+        .firstWhere((characteristics) => characteristics.uuid == WIFI_SETUP_CHARACTERISTIC_UUID);
+  }
 
-  List<Widget> _buildWifiScreen(List<BluetoothService> services) {
+  Future<List<String>> readWifiNames(BluetoothDevice device) async {
+    //TODO: does not work on first try
+    //TODO: what about listening to the values?
+    //TODO: build the screen here?
+    final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
 
-    final BluetoothService wifiConfigService = services
-        .firstWhere((service) => service.uuid == SERVICE_UUID);
+    List<int> bytes = await availableNetworks.read();
+    String allNames = utf8.decode(bytes);
+    return allNames.split('\n');
+  }
 
-    final BluetoothCharacteristic availableNetworks = wifiConfigService.characteristics
-        .firstWhere((characterstics) => characterstics.uuid == AVAILABE_NETWORKS_CHARACTERISTIC_UUID);
+  Widget _buildInputDialog(BluetoothDevice device, String ssid, BuildContext context) {
 
-    final BluetoothCharacteristic wifiConfig = wifiConfigService.characteristics
-        .firstWhere((characterstics) => characterstics.uuid == WIFI_SETUP_CHARACTERISTIC_UUID);
+    final TextEditingController _inputController = TextEditingController();
 
-    List<String> wifiNetworks;
-
-    Future<void> doSomething() async {
-      List<int> bytes = await availableNetworks.read();
-      String allNames = utf8.decode(bytes);
-      wifiNetworks = allNames.split('\n');
+    Future<void> _submitWifiCredentials(String password) async {
+      final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(device);
+      String wifiCredentials = ssid + "\n" + password;
+      await wifiConfig.write(utf8.encode(wifiCredentials));
     }
 
-    wifiNetworks.map((e) => ListTile()
+    return AlertDialog(
+      content:
+        TextField(
+          controller: _inputController,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Enter the WiFi password',
+            suffixIcon: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: _inputController.clear,
+            )
+          )
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text("Submit"),
+          onPressed: () {
+            //TODO: navigate to first screen
+            _submitWifiCredentials(_inputController.text);
+            Navigator.pop(context, 'OK');
+          },
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, 'Cancel'),
+          child: const Text('Cancel'),
+        ),
+      ],
 
     );
+
+
   }
 }

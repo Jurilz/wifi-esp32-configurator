@@ -256,21 +256,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
       ),
       actions: <Widget>[
         TextButton(
+          onPressed: () => Navigator.pop(context, 'Cancel'),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
           child: Text("Submit"),
           onPressed: () {
-            //TODO: navigate to first screen
+            //TODO: make method for this ?
             _submitWifiCredentials(_inputController.text);
             Navigator.pop(context, 'OK');
           },
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Cancel'),
-          child: const Text('Cancel'),
-        ),
       ],
-
     );
-
-
   }
 }

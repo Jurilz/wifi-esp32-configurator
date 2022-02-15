@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'dart:convert';
 
+import 'package:wifi_esp32_configurator/widgets.dart';
+
 final Guid SERVICE_UUID = new Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
 final Guid AVAILABE_NETWORKS_CHARACTERISTIC_UUID = new Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
 final Guid WIFI_SETUP_CHARACTERISTIC_UUID = new Guid('59a3861e-8d11-4f40-9597-912f562e4759');
@@ -15,7 +17,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -23,19 +24,29 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'WiFi Configurator (ESP32)'),
+      home: StreamBuilder<BluetoothState>(
+        stream: FlutterBlue.instance.state,
+        initialData: BluetoothState.unknown,
+        builder: (stream, builder) {
+          if (builder.data == BluetoothState.on) {
+            return const FoundDevicesScreen(title: "WiFi Configurator (ESP32)");
+          }
+          return const BluetoothOffScreen();
+        },
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+class FoundDevicesScreen extends StatefulWidget {
+  const FoundDevicesScreen({Key? key, required this.title}) : super(key: key);
   final String title;
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<FoundDevicesScreen> createState() => _FoundDevicesScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
+
 
   Future<void> _scanForDevices() async {
     FlutterBlue.instance.startScan(withServices: [SERVICE_UUID],timeout: Duration(seconds: 10));
@@ -47,6 +58,13 @@ class _MyHomePageState extends State<MyHomePage> {
         .push(MaterialPageRoute(builder: (context) {
           return DeviceScreen(device: device);
        }));
+  }
+
+  void navigateToDeviceScreen(BuildContext context, BluetoothDevice device) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) {
+      return DeviceScreen(device: device);
+    }));
   }
 
 
@@ -74,8 +92,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: builder.data!.map((scanResult) => ListTile(
                         // TODO: maybe add device id
-                        title: Text(scanResult.device.name),
-                        leading: Text(scanResult.rssi.toString()),
+                        title: Text(scanResult.device.name + ("  (RSSI: "'${scanResult.rssi}'")"),
+                          style: const TextStyle(fontSize: 18),),
+                        // leading: Text("RSSI: " + scanResult.rssi.toString()),
                         onTap: () => Navigator.of(context)
                             .push(MaterialPageRoute(builder: (context) {
                           return DeviceScreen(device: scanResult.device);
@@ -83,19 +102,31 @@ class _MyHomePageState extends State<MyHomePage> {
                         trailing: StreamBuilder<BluetoothDeviceState>(
                           stream: scanResult.device.state,
                           initialData: BluetoothDeviceState.disconnected,
-                          builder: (context, builder) => IconButton(
-                            icon: (builder.data == BluetoothDeviceState.connected)
-                              ? Icon(Icons.link_off)
-                              : Icon(Icons.link),
-                            onPressed: (builder.data == BluetoothDeviceState.connected)
-                              ? scanResult.device.disconnect
-                              : ()   async {
-                              // TODO: make method for this
-                                    FlutterBlue.instance.stopScan();
-                                    await scanResult.device.connect();
-                                    connectAndNavigate(context, scanResult.device);
-                            }
-                        )
+                          builder: (context, builder) => Ink(
+                            decoration: ShapeDecoration(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                    side: const BorderSide(
+                                        width: 2,
+                                        color: Colors.black12
+                                    )
+                                ),
+                                color: Colors.lightBlue),
+                                  child: IconButton(
+                                    color: Colors.white,
+                                    icon: (builder.data == BluetoothDeviceState.connected)
+                                        ? Icon(Icons.link_off)
+                                        : Icon(Icons.link),
+                                    onPressed: (builder.data == BluetoothDeviceState.connected)
+                                        ? scanResult.device.disconnect
+                                        : ()   async {
+                                      // TODO: make method for this
+                                      FlutterBlue.instance.stopScan();
+                                      await scanResult.device.connect();
+                                      connectAndNavigate(context, scanResult.device);
+                                    }
+                            ),
+                          )
                     )
                     )).toList(),
                   )

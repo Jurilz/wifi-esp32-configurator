@@ -21,7 +21,7 @@ class BluetoothOffScreen extends StatelessWidget {
               color: Colors.black12,
             ),
             Text(
-                'Bluetooth Adapter is ${state != null ? state.toString().substring(15) : 'not available'}.'
+                'Bluetooth Adapter is ${state != null ? state.toString().substring(15) : 'turned off'}.'
             ),
           ],
         ),

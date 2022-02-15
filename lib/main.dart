@@ -54,6 +54,8 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
 
   Future<void> connectAndNavigate(BuildContext context, BluetoothDevice device) async {
     FlutterBlue.instance.stopScan();
+    //TODO: this is a fix for ghost connections
+    await device.disconnect();
     await device.connect();
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) {

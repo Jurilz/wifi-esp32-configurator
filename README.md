@@ -1,6 +1,6 @@
-# wifi_esp32_configurator
+# WiFi Configurator App for ESP32 Controller
 
-A new Flutter project.
+This Flutter Application allows you to set WiFi Credentials on an ESP32 controller via a BLE connection.
 
 ## Getting Started
 

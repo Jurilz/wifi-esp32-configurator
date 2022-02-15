@@ -52,8 +52,9 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
     FlutterBlue.instance.startScan(withServices: [SERVICE_UUID],timeout: Duration(seconds: 10));
   }
 
-  void connectAndNavigate(BuildContext context, BluetoothDevice device) {
-    //TODO: mybe check if already connected but again not
+  Future<void> connectAndNavigate(BuildContext context, BluetoothDevice device) async {
+    FlutterBlue.instance.stopScan();
+    await device.connect();
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) {
           return DeviceScreen(device: device);
@@ -90,19 +91,21 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
                 builder: (context, builder) => Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: builder.data!.map((scanResult) => ListTile(
+                    children: <Widget>[
+                      ...builder.data!.map((scanResult) =>
+                      StreamBuilder<BluetoothDeviceState>(
+                        stream: scanResult.device.state,
+                        initialData: BluetoothDeviceState.connecting,
+                        builder: (stateContext, stateBuilder) => ListTile(
                         // TODO: maybe add device id
                         title: Text(scanResult.device.name + ("  (RSSI: "'${scanResult.rssi}'")"),
                           style: const TextStyle(fontSize: 18),),
                         // leading: Text("RSSI: " + scanResult.rssi.toString()),
-                        onTap: () => Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (context) {
-                          return DeviceScreen(device: scanResult.device);
-                        })),
-                        trailing: StreamBuilder<BluetoothDeviceState>(
-                          stream: scanResult.device.state,
-                          initialData: BluetoothDeviceState.disconnected,
-                          builder: (context, builder) => Ink(
+                            //TODO: maybe ExpandTile with details infos
+                        onTap: (stateBuilder.data == BluetoothDeviceState.connected)
+                              ? () => navigateToDeviceScreen(context, scanResult.device)
+                              : () => connectAndNavigate(context, scanResult.device),
+                        trailing:  Ink(
                             decoration: ShapeDecoration(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.0),
@@ -114,21 +117,18 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
                                 color: Colors.lightBlue),
                                   child: IconButton(
                                     color: Colors.white,
-                                    icon: (builder.data == BluetoothDeviceState.connected)
+                                    icon: (stateBuilder.data == BluetoothDeviceState.connected)
                                         ? Icon(Icons.link_off)
                                         : Icon(Icons.link),
-                                    onPressed: (builder.data == BluetoothDeviceState.connected)
+                                    onPressed: (stateBuilder.data == BluetoothDeviceState.connected)
                                         ? scanResult.device.disconnect
-                                        : ()   async {
-                                      // TODO: make method for this
-                                      FlutterBlue.instance.stopScan();
-                                      await scanResult.device.connect();
-                                      connectAndNavigate(context, scanResult.device);
-                                    }
+                                        : () => connectAndNavigate(context, scanResult.device)
+
                             ),
                           )
-                    )
-                    )).toList(),
+                        )
+                      )).toList(),
+                    ]
                   )
               )
             ]
@@ -222,7 +222,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 
   Future<List<String>> readWifiNames(BluetoothDevice device) async {
-    //TODO: does not work on first try
     //TODO: what about listening to the values?
     //TODO: build the screen here?
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);

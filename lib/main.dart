@@ -187,7 +187,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                   title: Text(wifi),
                                   leading: const Icon(Icons.wifi),
                                   trailing: IconButton(
-                                    icon: Icon(Icons.link),
+                                    icon: const Icon(Icons.link),
                                     onPressed: () => showDialog(
                                         context: context,
                                         builder: (builder) => _buildInputDialog(widget.device, wifi, context),
@@ -199,7 +199,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               )).toList()
                       );
                     } else {
-                      return CircularProgressIndicator();
+                      return const CircularProgressIndicator();
                     }
                   }
               )

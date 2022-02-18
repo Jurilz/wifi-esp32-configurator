@@ -224,8 +224,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 
   Future<List<String>> readWifiNames(BluetoothDevice device) async {
-    //TODO: what about listening to the values?
-    //TODO: build the screen here?
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
 
     List<int> bytes = await availableNetworks.read();
@@ -241,6 +239,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(device);
       String wifiCredentials = ssid + "\n" + password;
       await wifiConfig.write(utf8.encode(wifiCredentials));
+      await readStatusAndDisconnect(device, context);
     }
 
     return AlertDialog(
@@ -264,12 +263,28 @@ class _DeviceScreenState extends State<DeviceScreen> {
         TextButton(
           child: Text("Submit"),
           onPressed: () {
-            //TODO: make method for this ?
             _submitWifiCredentials(_inputController.text);
-            Navigator.pop(context, 'OK');
           },
         ),
       ],
     );
+  }
+
+  Future<void> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
+    final BluetoothCharacteristic general = await getAvailableNetworksCharacteristics(device);
+    List<int> bytes = await general.read();
+    String status = utf8.decode(bytes);
+    if (status == "SUCCESS") {
+      try {
+        general.write(utf8.encode("CLOSED"));
+        device.disconnect();
+        Navigator.pop(context);
+        Navigator.pop(context);
+      } on Exception catch(e) {
+
+      }
+    } else {
+      Navigator.pop(context);
+    }
   }
 }

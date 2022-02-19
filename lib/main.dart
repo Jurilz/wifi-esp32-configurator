@@ -181,43 +181,37 @@ class _DeviceScreenState extends State<DeviceScreen> {
       appBar: AppBar(
         title: Text(widget.device.name),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: <Widget>[
-            FutureBuilder<List<String>>(
-                future: _wifiNames,
-                initialData: [],
-                builder: (context, builder)  {
-                    if (builder.hasData) {
-                      return Column(
-                          children: builder.data!
-                              .map((wifi) =>
-                              ListTile(
-                                  title: Text(wifi),
-                                  leading: const Icon(Icons.wifi),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.link),
-                                    onPressed: () => showDialog(
-                                        context: context,
-                                        builder: (builder) => _buildInputDialog(widget.device, wifi, context),
-                                  )),
-                                onTap: () => showDialog(
+      body: FutureBuilder<List<String>>(
+        future: _wifiNames,
+          builder: (context, builder)  {
+            if (builder.hasData) {
+              return SingleChildScrollView(
+                child: Column(
+                  children: builder.data!
+                    .map((wifi) =>
+                        ListTile(
+                            title: Text(wifi),
+                            leading: const Icon(Icons.wifi),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.link),
+                              onPressed: () => showDialog(
                                   context: context,
                                   builder: (builder) => _buildInputDialog(widget.device, wifi, context),
+                            )),
+                          onTap: () => showDialog(
+                            context: context,
+                            builder: (builder) => _buildInputDialog(widget.device, wifi, context),
                           ),
-                              )).toList()
-                      );
-                    } else {
-                      return const CircularProgressIndicator();
-                    }
-                  }
-              ),
-              const Center(
+                        )).toList()
+                  )
+                );
+            } else {
+              return const Center(
                 child: CircularProgressIndicator(),
-              ),
-          ],
-        )
-      )
+              );
+            }
+          }
+      ),
     );
   }
   

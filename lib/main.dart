@@ -4,9 +4,17 @@ import 'dart:convert';
 
 import 'package:wifi_esp32_configurator/widgets.dart';
 
-final Guid SERVICE_UUID = new Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
-final Guid AVAILABE_NETWORKS_CHARACTERISTIC_UUID = new Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
-final Guid WIFI_SETUP_CHARACTERISTIC_UUID = new Guid('59a3861e-8d11-4f40-9597-912f562e4759');
+final Guid serviceUUID = new Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+final Guid availableNetworksCharacteristicsUUID = new Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+final Guid wifiSetupCharacteristicsUUID = new Guid('59a3861e-8d11-4f40-9597-912f562e4759');
+
+
+const String appBarTitle = "WiFi Configurator (ESP32)";
+const String appTitle = "WiFi Configurator";
+const String success = "SUCCESS";
+const String closed = "CLOSED";
+const String scanToolTip = 'Scan for BLE Devices';
+const String inputHint = 'Enter the WiFi password';
 
 //TODO: exract all Strings
 
@@ -20,7 +28,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'WiFi Configurator',
+      title: appTitle,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -29,7 +37,7 @@ class MyApp extends StatelessWidget {
         initialData: BluetoothState.unknown,
         builder: (stream, builder) {
           if (builder.data == BluetoothState.on) {
-            return const FoundDevicesScreen(title: "WiFi Configurator (ESP32)");
+            return const FoundDevicesScreen(title: appBarTitle);
           }
           return const BluetoothOffScreen();
         },
@@ -49,7 +57,7 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
 
 
   Future<void> _scanForDevices() async {
-    FlutterBlue.instance.startScan(withServices: [SERVICE_UUID],timeout: Duration(seconds: 10));
+    FlutterBlue.instance.startScan(withServices: [serviceUUID],timeout: Duration(seconds: 10));
   }
 
   Future<void> connectAndNavigate(BuildContext context, BluetoothDevice device) async {
@@ -59,8 +67,8 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
     await device.connect();
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) {
-          return DeviceScreen(device: device);
-       }));
+      return DeviceScreen(device: device);
+    }));
   }
 
   void navigateToDeviceScreen(BuildContext context, BluetoothDevice device) {
@@ -74,7 +82,8 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    FlutterBlue.instance.startScan(withServices: [SERVICE_UUID],timeout: Duration(seconds: 10));
+
+    FlutterBlue.instance.startScan(withServices: [serviceUUID],timeout: Duration(seconds: 10));
 
     return Scaffold(
       appBar: AppBar(
@@ -139,7 +148,7 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _scanForDevices,
-        tooltip: 'Increment',
+        tooltip: scanToolTip,
         child: const Icon(Icons.search),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
@@ -202,7 +211,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       return const CircularProgressIndicator();
                     }
                   }
-              )
+              ),
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
           ],
         )
       )
@@ -211,21 +223,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
   
   Future<BluetoothCharacteristic> getAvailableNetworksCharacteristics(BluetoothDevice device) async {
     final List<BluetoothService> services = await device.discoverServices();
-    final BluetoothService service = services.firstWhere((service) => service.uuid == SERVICE_UUID);
+    final BluetoothService service = services.firstWhere((service) => service.uuid == serviceUUID);
     return service.characteristics
-        .firstWhere((characteristics) => characteristics.uuid == AVAILABE_NETWORKS_CHARACTERISTIC_UUID);
+        .firstWhere((characteristics) => characteristics.uuid == availableNetworksCharacteristicsUUID);
   }
 
   Future<BluetoothCharacteristic> getWifiConfigCharacteristics(BluetoothDevice device) async {
     final List<BluetoothService> services = await device.discoverServices();
-    final BluetoothService service = services.firstWhere((service) => service.uuid == SERVICE_UUID);
+    final BluetoothService service = services.firstWhere((service) => service.uuid == serviceUUID);
     return service.characteristics
-        .firstWhere((characteristics) => characteristics.uuid == WIFI_SETUP_CHARACTERISTIC_UUID);
+        .firstWhere((characteristics) => characteristics.uuid == wifiSetupCharacteristicsUUID);
   }
 
   Future<List<String>> readWifiNames(BluetoothDevice device) async {
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
-
     List<int> bytes = await availableNetworks.read();
     String allNames = utf8.decode(bytes);
     return allNames.split('\n');
@@ -247,10 +258,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
         TextField(
           controller: _inputController,
           decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Enter the WiFi password',
+            border: const OutlineInputBorder(),
+            hintText: inputHint,
             suffixIcon: IconButton(
-              icon: Icon(Icons.delete),
+              icon: const Icon(Icons.delete),
               onPressed: _inputController.clear,
             )
           )
@@ -261,7 +272,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           child: const Text('Cancel'),
         ),
         TextButton(
-          child: Text("Submit"),
+          child: const Text("Submit"),
           onPressed: () {
             _submitWifiCredentials(_inputController.text);
           },
@@ -274,14 +285,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final BluetoothCharacteristic general = await getAvailableNetworksCharacteristics(device);
     List<int> bytes = await general.read();
     String status = utf8.decode(bytes);
-    if (status == "SUCCESS") {
+    if (status == success) {
       try {
-        general.write(utf8.encode("CLOSED"));
+        general.write(utf8.encode(closed));
         device.disconnect();
         Navigator.pop(context);
         Navigator.pop(context);
       } on Exception catch(e) {
-
+        Navigator.pop(context);
       }
     } else {
       Navigator.pop(context);

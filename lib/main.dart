@@ -16,7 +16,6 @@ const String closed = "CLOSED";
 const String scanToolTip = 'Scan for BLE Devices';
 const String inputHint = 'Enter the WiFi password';
 
-//TODO: exract all Strings
 
 void main() {
   runApp(const MyApp());

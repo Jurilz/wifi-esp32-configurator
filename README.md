@@ -2,7 +2,7 @@
 
 This Flutter Application allows you to set WiFi Credentials on an ESP32 controller via a BLE connection.
 
-It was developed to be used in combination with the [ESP32 WiFi Configuration](https://github.com/Jurilz/esp32_wifi_lib) Library for ESP32 Controller. Altough it can be used with any BLE Server, which implements the API.
+It was developed to be used in combination with the [ESP32 WiFi Configuration](https://github.com/Jurilz/esp32_wifi_lib) Library for ESP32 Controller, although it can be used with any BLE Server, which implements the API.
 
 ## API
 

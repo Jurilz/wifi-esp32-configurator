@@ -2,15 +2,54 @@
 
 This Flutter Application allows you to set WiFi Credentials on an ESP32 controller via a BLE connection.
 
-## Getting Started
+It was developed to be used in combination with the [ESP32 WiFi Configuration](https://github.com/Jurilz/esp32_wifi_lib) Library for ESP32 Controller. Altough it can be used with any BLE Server, which implements the API.
 
-This project is a starting point for a Flutter application.
+## API
 
-A few resources to get you started if this is your first Flutter project:
+### BLE Service Scan
+As a BLE Client the App scans for availble BLE Devices, that offer (resp. advertise) a BLE Service with the UUID `4fafc201-1fb5-459e-8fcc-c5c9c331914b`
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+### BLE Characteristics
+The BLE Service is expected to provide two Characteristics:
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* Available Networks Characteristics
+* WiFi Configuration
+
+### Available Networks Characteristics
+UUID: `beb5483e-36e1-4688-b7f5-ea07361b26a8`
+
+The App expects to read a list of avaible WiFi Networks from these Characteristics. The SSIDs are expected to seperated by a newline character (`\n`) and encoded as a byte array.
+
+The App also expects to be informed whether the WiFi connection was successfully established by a `SUCCESS` message wrote to these Characteristics by the ESP32 Controller.
+
+It then writes a `CLOSED` message to these Characteristics and disconnects from the BLE Device.
+
+### WiFi Setup Characteristics
+ UUID: `59a3861e-8d11-4f40-9597-912f562e4759`
+
+ The App writes the WiFi name (SSID) and the password seperated by a newline character (`\n`) and encoded as a byte array to these Characteritics.
+
+## Permisions
+
+As the [Flutter Blue](https://pub.dev/packages/flutter_blue) Plugin is used for BLE communication following permissions are needed:
+
+### Android
+* Bluetooth
+* Bluetooth Admin
+* Access Coarse Location
+
+### iOS
+* Bluetooth Always Usage
+* Bluetooth Peripheral Usage
+* Location Always And When In Use Usage
+* Location When In Use Usage
+* Location Always Usage
+
+For more information refer to the [Flutter Blue](https://pub.dev/documentation/flutter_blue/latest/) documentation.
+
+## Used Dependencies
+
+* [Flutter Blue (0.8.8)](https://pub.dev/packages/flutter_blue)
+
+## Licence
+GNU General Public License v3 (GPL-3)

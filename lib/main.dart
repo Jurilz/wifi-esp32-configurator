@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: appTitle,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.blueGrey,
       ),
       home: StreamBuilder<BluetoothState>(
         stream: FlutterBlue.instance.state,
@@ -118,13 +118,13 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
                         trailing:  Ink(
                             decoration: ShapeDecoration(
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0),
+                                  borderRadius: BorderRadius.circular(50.0),
                                     side: const BorderSide(
                                         width: 2,
                                         color: Colors.black12
                                     )
                                 ),
-                                color: Colors.lightBlue),
+                                color: Colors.blueGrey),
                                   child: IconButton(
                                     color: Colors.white,
                                     icon: (stateBuilder.data == BluetoothDeviceState.connected)

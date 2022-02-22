@@ -49,7 +49,8 @@ For more information refer to the [Flutter Blue](https://pub.dev/documentation/f
 
 ## Used Dependencies
 
-* [Flutter Blue (0.8.8)](https://pub.dev/packages/flutter_blue)
+* [Flutter Blue (0.8.8)](https://pub.dev/packages/flutter_blue) 
+Copyright 2017 Paul DeMarco. All rights reserved. [Licence BSD-3-Clause](https://pub.dev/packages/flutter_blue/license)
 
 ## Licence
 GNU General Public License v3 (GPL-3)

@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'dart:convert';
 
 import 'package:wifi_esp32_configurator/widgets.dart';
 
-final Guid serviceUUID = new Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
-final Guid availableNetworksCharacteristicsUUID = new Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
-final Guid wifiSetupCharacteristicsUUID = new Guid('59a3861e-8d11-4f40-9597-912f562e4759');
+final Guid serviceUUID = Guid('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+final Guid availableNetworksCharacteristicsUUID = Guid('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+final Guid wifiSetupCharacteristicsUUID = Guid('59a3861e-8d11-4f40-9597-912f562e4759');
 
 
 const String appBarTitle = "WiFi Configurator (ESP32)";
 const String appTitle = "WiFi Configurator";
 const String success = "SUCCESS";
 const String closed = "CLOSED";
-const String scanToolTip = 'Scan for BLE Devices';
-const String inputHint = 'Enter the WiFi password';
-
+const String cancel = 'Cancel';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +30,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: StreamBuilder<BluetoothState>(
         stream: FlutterBlue.instance.state,
         initialData: BluetoothState.unknown,
@@ -147,7 +148,7 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _scanForDevices,
-        tooltip: scanToolTip,
+        tooltip: AppLocalizations.of(context)!.scanToolTip,
         child: const Icon(Icons.search),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
@@ -223,6 +224,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
          context: context,
          builder: (builder) => _buildInputDialog(widget.device, wifi, context)
      );
+     if (pw == cancel) return;
      showDialog(
          context: context,
          builder: (builder) {
@@ -236,7 +238,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                        actions: <Widget>[
                          TextButton(
                            onPressed: () {
-                             if (credentialBuilder.data! == success) {
+                             if (credentialBuilder.data! == AppLocalizations.of(context)!.connectionEstablished) {
                                Navigator.pop(context);
                                Navigator.pop(context);
                              } else {
@@ -286,15 +288,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
     return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text("WiFi: $ssid"),
+            title: Text("${AppLocalizations.of(context)!.wifi}: $ssid"),
             content:
               TextField(
                 controller: _inputController,
                 obscureText: _isObscure,
                 decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: AppLocalizations.of(context)!.password,
                       border: const OutlineInputBorder(),
-                      hintText: inputHint,
+                      hintText: AppLocalizations.of(context)!.inputHint,
                       suffixIcon: IconButton(
                         icon: Icon(
                             _isObscure ? Icons.visibility : Icons.visibility_off
@@ -309,11 +311,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
               actions: <Widget>[
                 TextButton(
-                  onPressed: () => Navigator.pop(context, 'Cancel'),
-                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context, cancel),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 TextButton(
-                  child: const Text("Submit"),
+                  child: Text(AppLocalizations.of(context)!.connect),
                   onPressed: () {
                     Navigator.pop(context, _inputController.text);
                   },
@@ -328,9 +330,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
     List<int> bytes = await general.read();
     String status = utf8.decode(bytes);
     if (status == success) {
-      return status;
+      await device.disconnect();
+      return AppLocalizations.of(context)!.connectionEstablished;
     } else {
-      return 'Something went wrong';
+      //TODO:
+      return AppLocalizations.of(context)!.connectionFailed;
     }
   }
 }

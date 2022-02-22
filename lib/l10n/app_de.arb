@@ -1,0 +1,11 @@
+{
+    "scanToolTip": "Nach BLE-Geraeten scannen",
+    "inputHint": "Passwort eingeben",
+    "connectionEstablished": "Geraet mit WLAN verbunden",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "password": "Passwort",
+    "cancel": "Abbrechen",
+    "connect": "Verbinden",
+    "wifi": "WLAN",
+    "bleOff": "Bluetooth ist ausgeschaltet"
+}

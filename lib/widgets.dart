@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class BluetoothOffScreen extends StatelessWidget {
 
@@ -17,11 +17,12 @@ class BluetoothOffScreen extends StatelessWidget {
           children: <Widget>[
             const Icon(
               Icons.bluetooth_disabled,
-              size: 200.0,
-              color: Colors.black12,
+              size: 100.0,
+              color: Colors.blueGrey,
             ),
             Text(
-                'Bluetooth Adapter is ${state != null ? state.toString().substring(15) : 'turned off'}.'
+              AppLocalizations.of(context)!.bleOff,
+              style: const TextStyle(fontSize: 24)
             ),
           ],
         ),

@@ -168,10 +168,19 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   late Future<List<String>> _wifiNames;
 
+  bool _isObscure = true;
+
   @override
   void initState() {
     super.initState();
     _wifiNames =  readWifiNames(widget.device);
+  }
+
+  Future<String> _submitWifiCredentials(String ssid, String password) async {
+    final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(widget.device);
+    String wifiCredentials = ssid + "\n" + password;
+    await wifiConfig.write(utf8.encode(wifiCredentials));
+    return readStatusAndDisconnect(widget.device, context);
   }
 
   @override
@@ -182,7 +191,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       ),
       body: FutureBuilder<List<String>>(
         future: _wifiNames,
-          builder: (context, builder)  {
+        builder: (context, builder)  {
             if (builder.hasData) {
               return SingleChildScrollView(
                 child: Column(
@@ -193,14 +202,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             leading: const Icon(Icons.wifi),
                             trailing: IconButton(
                               icon: const Icon(Icons.link),
-                              onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (builder) => _buildInputDialog(widget.device, wifi, context),
-                            )),
-                          onTap: () => showDialog(
-                            context: context,
-                            builder: (builder) => _buildInputDialog(widget.device, wifi, context),
-                          ),
+                              onPressed: () => askAndSendCredentials(context, wifi)
+                            ),
+                          onTap: () => askAndSendCredentials(context, wifi),
                         )).toList()
                   )
                 );
@@ -212,6 +216,45 @@ class _DeviceScreenState extends State<DeviceScreen> {
           }
       ),
     );
+  }
+
+  Future<void> askAndSendCredentials(BuildContext context, String wifi) async {
+     String pw = await showDialog(
+         context: context,
+         builder: (builder) => _buildInputDialog(widget.device, wifi, context)
+     );
+     showDialog(
+         context: context,
+         builder: (builder) {
+           return FutureBuilder<String>(
+               future: _submitWifiCredentials(wifi, pw),
+               builder: (context, credentialBuilder) {
+                 if (credentialBuilder.hasData) {
+                   return AlertDialog(
+                     content:
+                       Text(credentialBuilder.data!),
+                       actions: <Widget>[
+                         TextButton(
+                           onPressed: () {
+                             if (credentialBuilder.data! == success) {
+                               Navigator.pop(context);
+                               Navigator.pop(context);
+                             } else {
+                               Navigator.pop(context);
+                             }
+                           },
+                           child: const Text('Ok'),
+                         )
+                     ],
+                   );
+                 }
+                 return const Center(
+                   child: CircularProgressIndicator(),
+                 );
+               }
+           );
+         }
+       );
   }
   
   Future<BluetoothCharacteristic> getAvailableNetworksCharacteristics(BluetoothDevice device) async {
@@ -239,56 +282,54 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     final TextEditingController _inputController = TextEditingController();
 
-    Future<void> _submitWifiCredentials(String password) async {
-      final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(device);
-      String wifiCredentials = ssid + "\n" + password;
-      await wifiConfig.write(utf8.encode(wifiCredentials));
-      await readStatusAndDisconnect(device, context);
-    }
 
-    return AlertDialog(
-      content:
-        TextField(
-          controller: _inputController,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            hintText: inputHint,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _inputController.clear,
-            )
-          )
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Cancel'),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          child: const Text("Submit"),
-          onPressed: () {
-            _submitWifiCredentials(_inputController.text);
-          },
-        ),
-      ],
-    );
+    return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            content:
+              TextField(
+                controller: _inputController,
+                  obscureText: _isObscure,
+                  decoration: InputDecoration(
+                      labelText: 'Password',
+                      border: const OutlineInputBorder(),
+                      hintText: inputHint,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                            _isObscure ? Icons.visibility : Icons.visibility_off
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isObscure = !_isObscure;
+                          });
+                        },
+                      )
+                  )
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 'Cancel'),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  child: const Text("Submit"),
+                  onPressed: () {
+                    Navigator.pop(context, _inputController.text);
+                  },
+                ),
+              ],
+          );
+        });
   }
 
-  Future<void> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
+  Future<String> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
     final BluetoothCharacteristic general = await getAvailableNetworksCharacteristics(device);
     List<int> bytes = await general.read();
     String status = utf8.decode(bytes);
     if (status == success) {
-      try {
-        general.write(utf8.encode(closed));
-        device.disconnect();
-        Navigator.pop(context);
-        Navigator.pop(context);
-      } on Exception catch(e) {
-        Navigator.pop(context);
-      }
+      return status;
     } else {
-      Navigator.pop(context);
+      return 'Something went wrong';
     }
   }
 }

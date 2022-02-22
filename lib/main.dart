@@ -286,11 +286,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
     return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
+            title: Text("WiFi: $ssid"),
             content:
               TextField(
                 controller: _inputController,
-                  obscureText: _isObscure,
-                  decoration: InputDecoration(
+                obscureText: _isObscure,
+                decoration: InputDecoration(
                       labelText: 'Password',
                       border: const OutlineInputBorder(),
                       hintText: inputHint,

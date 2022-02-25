@@ -29,6 +29,10 @@ It then writes a `CLOSED` message to these Characteristics and disconnects from 
 
  The App writes the WiFi name (SSID) and the password seperated by a newline character (`\n`) and encoded as a byte array to these Characteritics.
 
+## Android SDK version
+
+The minimum SKD Version is 19 due to compatibility of the [Flutter Blue](https://pub.dev/packages/flutter_blue) Plugin. 
+
 ## Permisions
 
 As the [Flutter Blue](https://pub.dev/packages/flutter_blue) Plugin is used for BLE communication following permissions are needed:
@@ -53,4 +57,4 @@ For more information refer to the [Flutter Blue](https://pub.dev/documentation/f
 Copyright 2017 Paul DeMarco. All rights reserved. [Licence BSD-3-Clause](https://pub.dev/packages/flutter_blue/license)
 
 ## Licence
-GNU General Public License v3 (GPL-3)
+Apache License 2.0 (Apache-2.0)

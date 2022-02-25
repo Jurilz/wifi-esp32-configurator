@@ -7,5 +7,6 @@
     "cancel": "Cancel",
     "connect": "Connect",
     "wifi": "WiFi",
-    "bleOff": "Bluetooth is turned off"
+    "bleOff": "Bluetooth is turned off",
+    "licences": "Licences"
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_blue/flutter_blue.dart';
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    addLicences();
     return MaterialApp(
       title: appTitle,
       theme: ThemeData(
@@ -43,6 +45,15 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void addLicences() {
+    LicenseRegistry.addLicense(() async* {
+      yield const LicenseEntryWithLineBreaks(<String>['Wifi icons created by Freepik - Flaticon'], "https://www.flaticon.com/free-icons/wifi"
+      );
+      yield const LicenseEntryWithLineBreaks(<String>['Bluetooth icons created by Smashicons - Flaticon'], "https://www.flaticon.com/free-icons/bluetooth"
+      );
+    });
   }
 }
 
@@ -78,17 +89,26 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
     }));
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-
     FlutterBlue.instance.startScan(withServices: [serviceUUID],timeout: Duration(seconds: 10));
 
     return Scaffold(
       appBar: AppBar(
-
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton(
+            icon: Icon(Icons.copyright),
+            itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+              PopupMenuItem(
+                child: ListTile(
+                  title: Text(AppLocalizations.of(context)!.licences),
+                  onTap: () => showLicensePage(context: context),
+                  ),
+                )
+              ]
+            )
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _scanForDevices,
@@ -163,7 +183,6 @@ class DeviceScreen extends StatefulWidget {
   @override
   State<DeviceScreen> createState() => _DeviceScreenState();
 }
-
 
 class _DeviceScreenState extends State<DeviceScreen> {
 
@@ -333,7 +352,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
       await device.disconnect();
       return AppLocalizations.of(context)!.connectionEstablished;
     } else {
-      //TODO:
       return AppLocalizations.of(context)!.connectionFailed;
     }
   }

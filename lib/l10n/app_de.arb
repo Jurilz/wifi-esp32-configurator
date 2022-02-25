@@ -7,5 +7,6 @@
     "cancel": "Abbrechen",
     "connect": "Verbinden",
     "wifi": "WLAN",
-    "bleOff": "Bluetooth ist ausgeschaltet"
+    "bleOff": "Bluetooth ist ausgeschaltet",
+    "licences": "Lizenzen"
 }

@@ -98,7 +98,7 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
         title: Text(widget.title),
         actions: [
           PopupMenuButton(
-            icon: Icon(Icons.copyright),
+            icon: const Icon(Icons.copyright),
             itemBuilder: (BuildContext context) => <PopupMenuEntry>[
               PopupMenuItem(
                 child: ListTile(
@@ -183,7 +183,7 @@ class DeviceScreen extends StatefulWidget {
 
 class _DeviceScreenState extends State<DeviceScreen> {
 
-  late Future<List<String>> _wifiNames;
+  late Future<List<WiFiConnection>> _wifiNames;
 
   bool _isObscure = true;
 
@@ -200,13 +200,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
     return readStatusAndDisconnect(widget.device, context);
   }
 
+  Future<String> _submitNameToOpenWiFi(String ssid) async {
+    final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(widget.device);
+    String wifiCredentials = ssid + "\n" + "";
+    await wifiConfig.write(utf8.encode(wifiCredentials));
+    return readStatusAndDisconnect(widget.device, context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.device.name),
       ),
-      body: FutureBuilder<List<String>>(
+      body: FutureBuilder<List<WiFiConnection>>(
         future: _wifiNames,
         builder: (context, builder)  {
             if (builder.hasData) {
@@ -215,13 +222,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   children: builder.data!
                     .map((wifi) =>
                         ListTile(
-                            title: Text(wifi),
+                            title: Text(wifi.name),
                             leading: const Icon(Icons.wifi),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.link),
-                              onPressed: () => askAndSendCredentials(context, wifi)
-                            ),
-                          onTap: () => askAndSendCredentials(context, wifi),
+                            trailing: !wifi.openConnection ? const Icon(Icons.lock) : null,
+                          onTap: () {
+                              if (wifi.openConnection) {
+                                connectToOpenWiFi(context, wifi);
+                              } else {
+                                askAndSendCredentials(context, wifi);
+                              }
+                            },
                         )).toList()
                   )
                 );
@@ -235,7 +245,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     );
   }
 
-  Future<void> askAndSendCredentials(BuildContext context, String wifi) async {
+  Future<void> askAndSendCredentials(BuildContext context, WiFiConnection wifi) async {
      String pw = await showDialog(
          context: context,
          builder: (builder) => _buildInputDialog(widget.device, wifi, context)
@@ -245,7 +255,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
          context: context,
          builder: (builder) {
            return FutureBuilder<String>(
-               future: _submitWifiCredentials(wifi, pw),
+               future: _submitWifiCredentials(wifi.name, pw),
                builder: (context, credentialBuilder) {
                  if (credentialBuilder.hasData) {
                    return AlertDialog(
@@ -274,6 +284,46 @@ class _DeviceScreenState extends State<DeviceScreen> {
          }
        );
   }
+
+  Future<void> connectToOpenWiFi(BuildContext context, WiFiConnection wifi) async {
+    bool connect = await showDialog(
+        context: context,
+        builder: (builder) => _buildOpenInputDialog(widget.device, wifi, context)
+    );
+    if (!connect) return;
+    showDialog(
+        context: context,
+        builder: (builder) {
+          return FutureBuilder<String>(
+              future: _submitNameToOpenWiFi(wifi.name),
+              builder: (context, credentialBuilder) {
+                if (credentialBuilder.hasData) {
+                  return AlertDialog(
+                    content:
+                    Text(credentialBuilder.data!),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          if (credentialBuilder.data! == AppLocalizations.of(context)!.connectionEstablished) {
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: const Text('Ok'),
+                      )
+                    ],
+                  );
+                }
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+          );
+        }
+    );
+  }
   
   Future<BluetoothCharacteristic> getAvailableNetworksCharacteristics(BluetoothDevice device) async {
     final List<BluetoothService> services = await device.discoverServices();
@@ -289,14 +339,26 @@ class _DeviceScreenState extends State<DeviceScreen> {
         .firstWhere((characteristics) => characteristics.uuid == wifiSetupCharacteristicsUUID);
   }
 
-  Future<List<String>> readWifiNames(BluetoothDevice device) async {
+  Future<List<WiFiConnection>> readWifiNames(BluetoothDevice device) async {
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
-    List<int> bytes = await availableNetworks.read();
-    String allNames = utf8.decode(bytes);
-    return allNames.split('\n');
+    final List<int> bytes = await availableNetworks.read();
+    final String allNames = utf8.decode(bytes);
+    return convertFromString(allNames);
   }
 
-  Widget _buildInputDialog(BluetoothDevice device, String ssid, BuildContext context) {
+  List<WiFiConnection> convertFromString(String names) {
+    final List<String> namesAsList = names.split('\n');
+    List<WiFiConnection> result = [];
+    for (String nameStringEncoded in namesAsList) {
+      if (nameStringEncoded.isEmpty) continue;
+      String connectionType = nameStringEncoded.substring(nameStringEncoded.length - 1);
+      String name = nameStringEncoded.substring(0, (nameStringEncoded.length - 1));
+      result.add(WiFiConnection(name: name, openConnection: (connectionType == "0") ? true : false));
+    }
+    return result;
+  }
+
+  Widget _buildInputDialog(BluetoothDevice device, WiFiConnection wifi, BuildContext context) {
 
     final TextEditingController _inputController = TextEditingController();
 
@@ -304,7 +366,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text("${AppLocalizations.of(context)!.wifi}: $ssid"),
+            title: Text("${AppLocalizations.of(context)!.wifi}: ${wifi.name}"),
             content:
               TextField(
                 controller: _inputController,
@@ -341,6 +403,30 @@ class _DeviceScreenState extends State<DeviceScreen> {
         });
   }
 
+  Widget _buildOpenInputDialog(BluetoothDevice device, WiFiConnection wifi, BuildContext context) {
+
+
+    return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text("Connect to ${AppLocalizations.of(context)!.wifi}: ${wifi.name}?"),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(AppLocalizations.of(context)!.cancel),
+              ),
+              TextButton(
+                child: Text(AppLocalizations.of(context)!.connect),
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  //TODO: maybe in try block
   Future<String> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
     final BluetoothCharacteristic general = await getAvailableNetworksCharacteristics(device);
     List<int> bytes = await general.read();
@@ -352,4 +438,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
       return AppLocalizations.of(context)!.connectionFailed;
     }
   }
+}
+
+class WiFiConnection {
+  final String name;
+  final bool openConnection;
+
+  const WiFiConnection({
+    required this.name,
+    required this.openConnection
+  });
 }

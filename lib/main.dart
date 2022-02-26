@@ -432,7 +432,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
     List<int> bytes = await general.read();
     String status = utf8.decode(bytes);
     if (status == success) {
-      await device.disconnect();
+      general.write(utf8.encode(closed));
+      device.disconnect();
       return AppLocalizations.of(context)!.connectionEstablished;
     } else {
       return AppLocalizations.of(context)!.connectionFailed;

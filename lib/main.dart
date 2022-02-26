@@ -114,7 +114,6 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
         onRefresh: _scanForDevices,
         child: SingleChildScrollView(
           child: Column(
-            // TODO: maybe expansion tile
             children: <Widget>[
               StreamBuilder<List<ScanResult>>(
                 stream: FlutterBlue.instance.scanResults,
@@ -128,11 +127,9 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
                         stream: scanResult.device.state,
                         initialData: BluetoothDeviceState.connecting,
                         builder: (stateContext, stateBuilder) => ListTile(
-                        // TODO: maybe add device id
                         title: Text(scanResult.device.name + ("  (RSSI: "'${scanResult.rssi}'")"),
                           style: const TextStyle(fontSize: 18),),
                         // leading: Text("RSSI: " + scanResult.rssi.toString()),
-                            //TODO: maybe ExpandTile with details infos
                         onTap: (stateBuilder.data == BluetoothDeviceState.connected)
                               ? () => navigateToDeviceScreen(context, scanResult.device)
                               : () => connectAndNavigate(context, scanResult.device),

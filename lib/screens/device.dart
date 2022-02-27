@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
+import 'package:wifi_esp32_configurator/model/converter.dart';
 import 'package:wifi_esp32_configurator/model/wifi_connection.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -27,6 +28,8 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreenState extends State<DeviceScreen> {
 
   late Future<List<WiFiConnection>> _wifiNames;
+
+  final Converter converter = Converter();
 
   bool _isObscure = true;
 
@@ -204,7 +207,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
     final List<int> bytes = await availableNetworks.read();
     final String allNames = utf8.decode(bytes);
-    return WiFiConnection.convertFromString(allNames);
+    // final List<> names = allNames.
+    return allNames.split('\n').map((name) => converter.convertFromString(name)).toList();
+    // return WiFiConnection.convertFromString(allNames);
   }
 
   Widget _buildInputDialog(BluetoothDevice device, WiFiConnection wifi, BuildContext context) {

@@ -1,7 +1,6 @@
 
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:wifi_esp32_configurator/model/converter.dart';
@@ -106,7 +105,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 if (credentialBuilder.hasData && credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text( AppLocalizations.of(context)!.connectionEstablished),
+                    Text(AppLocalizations.of(context)!.connectionEstablished),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
@@ -120,7 +119,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 } else if (credentialBuilder.hasData && !credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text( AppLocalizations.of(context)!.connectionFailed),
+                    Text(AppLocalizations.of(context)!.connectionFailed),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
@@ -155,7 +154,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 if (credentialBuilder.hasData && credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text( AppLocalizations.of(context)!.connectionEstablished),
+                    Text(AppLocalizations.of(context)!.connectionEstablished),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
@@ -169,7 +168,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 } else if (credentialBuilder.hasData && !credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text( AppLocalizations.of(context)!.connectionFailed),
+                    Text(AppLocalizations.of(context)!.connectionFailed),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {

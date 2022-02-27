@@ -207,9 +207,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
     final List<int> bytes = await availableNetworks.read();
     final String allNames = utf8.decode(bytes);
-    // final List<> names = allNames.
-    return allNames.split('\n').map((name) => converter.convertFromString(name)).toList();
-    // return WiFiConnection.convertFromString(allNames);
+
+    return allNames.split('\n')
+        .where((element) => element.length > 2)
+        .map((name) => converter.convertFromString(name)).toList();
   }
 
   Widget _buildInputDialog(BluetoothDevice device, WiFiConnection wifi, BuildContext context) {

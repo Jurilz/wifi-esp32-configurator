@@ -36,14 +36,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
     _wifiNames =  readWifiNames(widget.device);
   }
 
-  Future<String> _submitWifiCredentials(String ssid, String password) async {
+  Future<bool> _submitWifiCredentials(String ssid, String password) async {
     final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(widget.device);
     String wifiCredentials = ssid + "\n" + password;
     await wifiConfig.write(utf8.encode(wifiCredentials));
     return readStatusAndDisconnect(widget.device, context);
   }
 
-  Future<String> _submitNameToOpenWiFi(String ssid) async {
+  Future<bool> _submitNameToOpenWiFi(String ssid) async {
     final BluetoothCharacteristic wifiConfig = await getWifiConfigCharacteristics(widget.device);
     String wifiCredentials = ssid + "\n" + "";
     await wifiConfig.write(utf8.encode(wifiCredentials));
@@ -97,22 +97,31 @@ class _DeviceScreenState extends State<DeviceScreen> {
     showDialog(
         context: context,
         builder: (builder) {
-          return FutureBuilder<String>(
+          return FutureBuilder<bool>(
               future: _submitWifiCredentials(wifi.name, pw),
               builder: (context, credentialBuilder) {
-                if (credentialBuilder.hasData) {
+                if (credentialBuilder.hasData && credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text(credentialBuilder.data!),
+                    Text( AppLocalizations.of(context)!.connectionEstablished),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
-                          if (credentialBuilder.data! == AppLocalizations.of(context)!.connectionEstablished) {
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                          } else {
-                            Navigator.pop(context);
-                          }
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Ok'),
+                      )
+                    ],
+                  );
+                } else if (credentialBuilder.hasData && !credentialBuilder.data!) {
+                  return AlertDialog(
+                    content:
+                    Text( AppLocalizations.of(context)!.connectionFailed),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
                         },
                         child: const Text('Ok'),
                       )
@@ -137,22 +146,31 @@ class _DeviceScreenState extends State<DeviceScreen> {
     showDialog(
         context: context,
         builder: (builder) {
-          return FutureBuilder<String>(
+          return FutureBuilder<bool>(
               future: _submitNameToOpenWiFi(wifi.name),
               builder: (context, credentialBuilder) {
-                if (credentialBuilder.hasData) {
+                if (credentialBuilder.hasData && credentialBuilder.data!) {
                   return AlertDialog(
                     content:
-                    Text(credentialBuilder.data!),
+                    Text( AppLocalizations.of(context)!.connectionEstablished),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
-                          if (credentialBuilder.data! == AppLocalizations.of(context)!.connectionEstablished) {
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                          } else {
-                            Navigator.pop(context);
-                          }
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Ok'),
+                      )
+                    ],
+                  );
+                } else if (credentialBuilder.hasData && !credentialBuilder.data!) {
+                  return AlertDialog(
+                    content:
+                    Text( AppLocalizations.of(context)!.connectionFailed),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
                         },
                         child: const Text('Ok'),
                       )
@@ -186,19 +204,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final BluetoothCharacteristic availableNetworks = await getAvailableNetworksCharacteristics(device);
     final List<int> bytes = await availableNetworks.read();
     final String allNames = utf8.decode(bytes);
-    return convertFromString(allNames);
-  }
-
-  List<WiFiConnection> convertFromString(String names) {
-    final List<String> namesAsList = names.split('\n');
-    List<WiFiConnection> result = [];
-    for (String nameStringEncoded in namesAsList) {
-      if (nameStringEncoded.isEmpty) continue;
-      String connectionType = nameStringEncoded.substring(nameStringEncoded.length - 1);
-      String name = nameStringEncoded.substring(0, (nameStringEncoded.length - 1));
-      result.add(WiFiConnection(name: name, openConnection: (connectionType == "0") ? true : false));
-    }
-    return result;
+    return WiFiConnection.convertFromString(allNames);
   }
 
   Widget _buildInputDialog(BluetoothDevice device, WiFiConnection wifi, BuildContext context) {
@@ -268,17 +274,19 @@ class _DeviceScreenState extends State<DeviceScreen> {
           );
         });
   }
-  
-  Future<String> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
+
+  Future<bool> readStatusAndDisconnect(BluetoothDevice device, BuildContext context) async {
     final BluetoothCharacteristic general = await getAvailableNetworksCharacteristics(device);
     List<int> bytes = await general.read();
     String status = utf8.decode(bytes);
     if (status == success) {
       general.write(utf8.encode(closed));
       device.disconnect();
-      return AppLocalizations.of(context)!.connectionEstablished;
+      return true;
+      // return AppLocalizations.of(context)!.connectionEstablished;
     } else {
-      return AppLocalizations.of(context)!.connectionFailed;
+      return false;
+      // return AppLocalizations.of(context)!.connectionFailed;
     }
   }
 }

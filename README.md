@@ -56,5 +56,9 @@ For more information refer to the [Flutter Blue](https://pub.dev/documentation/f
 * [Flutter Blue (0.8.8)](https://pub.dev/packages/flutter_blue) 
 Copyright 2017 Paul DeMarco. All rights reserved. [Licence BSD-3-Clause](https://pub.dev/packages/flutter_blue/license)
 
+## Documentation
+
+More information can be found [here](https://jurilz.github.io/wifi-esp32-docs/).
+
 ## Licence
 Apache License 2.0 (Apache-2.0)

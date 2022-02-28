@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:wifi_esp32_configurator/services/BLEService.dart';
 
 import 'device.dart';
 
@@ -14,9 +15,11 @@ class FoundDevicesScreen extends StatefulWidget {
 
 class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
 
+  BLEService bleService = BLEService();
+
 
   Future<void> _scanForDevices() async {
-    FlutterBlue.instance.startScan(withServices: [serviceUUID],timeout: Duration(seconds: 10));
+    FlutterBlue.instance.startScan(withServices: [bleService.getServiceUUID()],timeout: Duration(seconds: 10));
   }
 
   Future<void> connectAndNavigate(BuildContext context, BluetoothDevice device) async {
@@ -39,7 +42,7 @@ class _FoundDevicesScreenState extends State<FoundDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    FlutterBlue.instance.startScan(withServices: [serviceUUID],timeout: Duration(seconds: 10));
+    FlutterBlue.instance.startScan(withServices: [bleService.getServiceUUID()],timeout: Duration(seconds: 10));
 
     return Scaffold(
       appBar: AppBar(
